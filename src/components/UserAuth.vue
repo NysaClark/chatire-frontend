@@ -2,7 +2,7 @@
   <div class="container">
     <h1 class="text-center">Welcome to Chatire!</h1>
     <div id="auth-container" class="row">
-      <div class="col-sm-4 offset-sm-4">
+      <div class="col-md-6 offset-md-3 col-lg-4 offset-lg-4">
         <ul class="nav nav-tabs nav-justified" id="myTab" role="tablist">
           <li class="nav-item" role="presentation">
             <button
@@ -54,7 +54,7 @@
                 />
               </div>
 
-              <div class="form-row">
+              <div class="row mt-1 g-2">
                 <div class="form-group col-md-6">
                   <input
                     v-model="username"
@@ -76,7 +76,7 @@
                   />
                 </div>
               </div>
-              <div class="form-group">
+              <div class="form-group my-2">
                 <div class="form-check">
                   <input
                     type="checkbox"
@@ -113,11 +113,11 @@
                   type="text"
                 />
               </div>
-              <div class="form-group">
+              <div class="form-group pt-1 mb-2">
                 <input
                   v-model="password"
                   type="password"
-                  class="form-control"
+                  class="form-control mt-2"
                   id="password"
                   placeholder="Password"
                   required
@@ -150,7 +150,7 @@ export default {
     async signUp() {
       try {
         const { data } = await axios.post(
-          "http://localhost:8000/auth/users/create/",
+          "http://localhost:8000/auth/users/",
           this.$data
         );
 
@@ -172,19 +172,23 @@ export default {
 
       try {
         const { data } = await axios.post(
-          "http://localhost:8000/auth/token/create/",
+          "http://localhost:8000/auth/token/login/",
           credentials
         );
 
-        sessionStorage.setItem("authToken", data.auth_token);
+        localStorage.setItem("authToken", data.auth_token);
 
-        sessionStorage.setItem("username", this.username);
+        localStorage.setItem("username", this.username);
         this.$router.push("/chats");
       } catch (err) {
         console.log(err);
         alert(err);
       }
     },
+
+    // logout() {
+    //   localStorage.removeItem("authToken");
+    // },
   },
 };
 </script>

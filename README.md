@@ -1,5 +1,8 @@
 Stopped at P2: Let's Grab our auth token
 
+username=Testing123
+password=Password123123
+
 # chatire-frontend
 
 ## Project setup
