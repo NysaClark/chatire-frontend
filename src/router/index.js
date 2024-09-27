@@ -5,7 +5,11 @@ import UserAuth from "@/components/UserAuth";
 
 const routes = [
   {
-    path: "/chats",
+    path: "/",
+    component: UserAuth,
+  },
+  {
+    path: "/chats/:uri?",
     component: Chat,
   },
   {
@@ -20,7 +24,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  console.log("here");
+  // console.log(localStorage.getItem("authToken"))
   if (localStorage.getItem("authToken") !== null || to.path === "/auth") {
     next();
   } else {
