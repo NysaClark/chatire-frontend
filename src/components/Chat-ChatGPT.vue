@@ -2,7 +2,7 @@
   <div class="container">
     <div class="row">
       <div class="col-sm-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
-        <div v-if="sessionStarted" id="chat-container" class="card">
+        <div v-if="uri" id="chat-container" class="card">
           <div
             class="card-header text-white text-center font-weight-bold subtle-blue-gradient"
           >
@@ -89,20 +89,34 @@ import axios from "axios";
 export default {
   data() {
     return {
-      sessionStarted: false,
       username: "",
       messages: [],
       message: "",
     };
   },
 
+  mounted() {
+    console.log("URI:", this.$route.params.uri);
+    if (!this.uri) {
+      console.log("no uri :/");
+    } else {
+      this.joinChatSession(); // Join chat & fetch messages if uri is present
+    }
+  },
+
   created() {
     this.username = localStorage.getItem("username");
+  },
+  watch: {
+    uri: "joinChatSession", // Whenever uri changes, try to join that chat session
+  },
 
-    if(sessionStorage.getItem("uri") !== null || this.$route.params.uri){
-      this.sessionStarted = true;
-      this.joinChatSession()
-    }
+  computed: {
+    uri() {
+      console.log("computer uri HERE");
+      console.log(this.$route.params.uri);
+      return this.$route.params.uri; // Retrieve uri from route params
+    },
   },
 
   methods: {
@@ -114,16 +128,16 @@ export default {
           },
         })
         .then((data) => {
-          alert(
-            "A new session has been created. You'll be redirected automatically."
-          );
-
-          // console.log(data.data.uri);
-          sessionStorage.setItem("uri", data.data.uri);
-
+          // alert(
+          //   "A new session has been created. You'll be redirected automatically."
+          // );
+          console.log('START CHAT SESSION')
+          console.log(data.data.uri);
           // Push the new URI to the route
-          // This code isn't working to put the uri in the route params :(
-          this.$router.push({ name: "Chat", params: { uri: data.data.uri } });
+          this.$router.push({ name: "Chat", params: { uri: data.data.uri }, replace: true }); // Ensure you use `params`
+
+          // Fetch messages for the newly created chat session
+          // this.fetchMessages();
         })
         .catch((error) => {
           console.log(error);
@@ -132,9 +146,11 @@ export default {
     },
 
     async postMessage() {
-      // uri isn't being saved in the params/data so session storage is the backup :(
-      const uri = this.$route.params.uri || sessionStorage.getItem("uri");
+      // uri isn't being saved in the params so session storage is the backup :(
+      console.log("POST MESSAGE");
+      console.log(this.uri);
 
+      const uri = this.$route.params.uri || sessionStorage.getItem("uri");
       if (!uri) {
         return;
       }
@@ -158,7 +174,11 @@ export default {
     },
 
     async joinChatSession() {
-      // uri isn't being saved in the params/data so session storage is the backup :(
+      // uri isn't being saved in the params so session storage is the backup :(
+      
+      console.log("JOIN CHAT SESSION");
+      console.log(this.uri);
+
       const uri = this.$route.params.uri || sessionStorage.getItem("uri");
 
       if (!uri) {
@@ -180,21 +200,23 @@ export default {
 
           if (user) {
             // The user belongs in & has joined the session
+            // this.sessionStarted = true;
             this.fetchChatSessionHistory();
           }
         });
     },
 
     async fetchChatSessionHistory() {
-      // uri isn't being saved in the params/data so session storage is the backup :(
+      console.log("FETCH CHAT SESSION HISTORY");
+      console.log(this.uri);
+
       const uri = this.$route.params.uri || sessionStorage.getItem("uri");
 
       if (!uri) {
         return;
       }
-
       await axios
-        .get(`http://127.0.0.1:8000/api/chats/${uri}/messages/`, {
+        .get(`http://localhost:8000/api/chats/${uri}/messages/`, {
           headers: {
             Authorization: `Token ${localStorage.getItem("authToken")}`,
           },

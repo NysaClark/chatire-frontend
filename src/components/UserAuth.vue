@@ -177,9 +177,15 @@ export default {
         );
 
         localStorage.setItem("authToken", data.auth_token);
-
         localStorage.setItem("username", this.username);
-        this.$router.push("/chats");
+
+        // this.$router.push("/chats");
+
+        // Redirect to the originally intended route, or default to /chats/
+        console.log(this.$route.query.redirect);
+        const redirectPath = this.$route.query.redirect || "/chats/";
+
+        this.$router.push(redirectPath);
       } catch (err) {
         console.log(err);
         alert(err);
