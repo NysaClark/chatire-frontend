@@ -95,28 +95,30 @@ export default {
     };
   },
 
+  computed: {
+    // Retrieve uri from route params
+    // & puts the uri in data
+    uri() {
+      return this.$route.params.uri;
+    },
+  },
+
   mounted() {
-    console.log("URI:", this.$route.params.uri);
-    if (!this.uri) {
-      console.log("no uri :/");
-    } else {
-      this.joinChatSession(); // Join chat & fetch messages if uri is present
+    // Join chat & fetch messages if uri is present
+    if (this.uri) {
+      this.joinChatSession();
     }
   },
 
   created() {
+    // takes the username from loccalStorage
+    // temp code: can be removed so only 'Welcome!' is displayed
     this.username = localStorage.getItem("username");
   },
-  watch: {
-    uri: "joinChatSession", // Whenever uri changes, try to join that chat session
-  },
 
-  computed: {
-    uri() {
-      console.log("computer uri HERE");
-      console.log(this.$route.params.uri);
-      return this.$route.params.uri; // Retrieve uri from route params
-    },
+  watch: {
+    // Whenever uri changes, try to join that chat session
+    uri: "joinChatSession",
   },
 
   methods: {
@@ -128,16 +130,14 @@ export default {
           },
         })
         .then((data) => {
-          // alert(
-          //   "A new session has been created. You'll be redirected automatically."
-          // );
-          console.log('START CHAT SESSION')
-          console.log(data.data.uri);
-          // Push the new URI to the route
-          this.$router.push({ name: "Chat", params: { uri: data.data.uri }, replace: true }); // Ensure you use `params`
-
-          // Fetch messages for the newly created chat session
-          // this.fetchMessages();
+          alert(
+            "A new session has been created. You'll be redirected automatically."
+          );
+          this.$router.push({
+            name: "Chat",
+            params: { uri: data.data.uri },
+            replace: true,
+          });
         })
         .catch((error) => {
           console.log(error);
@@ -146,19 +146,14 @@ export default {
     },
 
     async postMessage() {
-      // uri isn't being saved in the params so session storage is the backup :(
-      console.log("POST MESSAGE");
-      console.log(this.uri);
-
-      const uri = this.$route.params.uri || sessionStorage.getItem("uri");
-      if (!uri) {
+      if (!this.uri) { // can't post messages if not in a chat session
         return;
       }
 
       const body = { message: this.message };
 
       await axios
-        .post(`http://localhost:8000/api/chats/${uri}/messages/`, body, {
+        .post(`http://localhost:8000/api/chats/${this.uri}/messages/`, body, {
           headers: {
             Authorization: `Token ${localStorage.getItem("authToken")}`,
           },
@@ -174,21 +169,14 @@ export default {
     },
 
     async joinChatSession() {
-      // uri isn't being saved in the params so session storage is the backup :(
-      
-      console.log("JOIN CHAT SESSION");
-      console.log(this.uri);
-
-      const uri = this.$route.params.uri || sessionStorage.getItem("uri");
-
-      if (!uri) {
+      if (!this.uri) { // can't join a chat if there's no chat uri to join with
         return;
       }
 
       const body = { username: this.username };
 
       await axios
-        .patch(`http://localhost:8000/api/chats/${uri}/`, body, {
+        .patch(`http://localhost:8000/api/chats/${this.uri}/`, body, {
           headers: {
             Authorization: `Token ${localStorage.getItem("authToken")}`,
           },
@@ -199,24 +187,19 @@ export default {
           );
 
           if (user) {
-            // The user belongs in & has joined the session
-            // this.sessionStarted = true;
+            // The user has been added to the chat
+            // get past chat messages
             this.fetchChatSessionHistory();
           }
         });
     },
 
     async fetchChatSessionHistory() {
-      console.log("FETCH CHAT SESSION HISTORY");
-      console.log(this.uri);
-
-      const uri = this.$route.params.uri || sessionStorage.getItem("uri");
-
-      if (!uri) {
+      if (!this.uri) { // can't get chat messages if there's no chat uri to fetch with
         return;
       }
       await axios
-        .get(`http://localhost:8000/api/chats/${uri}/messages/`, {
+        .get(`http://localhost:8000/api/chats/${this.uri}/messages/`, {
           headers: {
             Authorization: `Token ${localStorage.getItem("authToken")}`,
           },

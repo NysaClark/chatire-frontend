@@ -182,10 +182,10 @@ export default {
         // this.$router.push("/chats");
 
         // Redirect to the originally intended route, or default to /chats/
-        console.log(this.$route.query.redirect);
-        const redirectPath = this.$route.query.redirect || "/chats/";
+        // console.log(this.$route.query.redirect);
+        // const redirectPath = this.$route.query.redirect || "/chats/";
 
-        this.$router.push(redirectPath);
+        this.$router.push('/chats/');
       } catch (err) {
         console.log(err);
         alert(err);

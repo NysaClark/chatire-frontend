@@ -1,6 +1,6 @@
-import { createRouter, createMemoryHistory } from 'vue-router';
+import { createRouter, createWebHistory } from "vue-router";
 
-import UserAuth from "@/components/UserAuth";  // A single page for login/signup
+import UserAuth from "@/components/UserAuth"; // A single page for login/signup
 import Chat from "@/components/Chat-ChatGPT";
 
 const routes = [
@@ -10,43 +10,47 @@ const routes = [
     component: UserAuth,
     beforeEnter: (to, from, next) => {
       // If the user is already logged in, redirect to the chat page
-      if(localStorage.getItem("authToken") !== null){
+      if (
+        localStorage.getItem("authToken") !== null &&
+        localStorage.getItem("authToken") !== "null" &&
+        localStorage.getItem("authToken") !== undefined
+      ) {
         next("/chats/");
-      }else{
+      } else {
         next();
       }
-    }
+    },
   },
   {
     path: "/chats/:uri?",
-    name: 'Chat',
+    name: "Chat",
     component: Chat,
-    meta: {requiresAuth: true}, // Custom meta field to check for auth
+    meta: { requiresAuth: true }, // Custom meta field to check for auth
   },
   {
-    path: '/:pathMatch(.*)*',  // Catch-all for unknown routes
-    redirect: '/auth', 
+    path: "/:pathMatch(.*)*", // Catch-all for unknown routes
+    redirect: "/auth",
   },
 ];
 
-
 const router = createRouter({
-  history: createMemoryHistory(),
+  history: createWebHistory(),
   routes,
 });
 
 // Global navigation guard to check for protected routes
 router.beforeEach((to, from, next) => {
-  console.log('Route object:', to); // This will show the entire route object
-  console.log('Route params:', to.params); // Check if the params object contains the expected values
-  console.log('Navigating to:', to.path); // Print the target path for navigation
-
-  if(to.matched.some(record => record.meta.requiresAuth)){
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
     // This route requires authentication
-    if(localStorage.getItem("authToken") == null){
+    // console.log(localStorage.getItem("authToken"))
+    if (
+      localStorage.getItem("authToken") == null ||
+      localStorage.getItem("authToken") == "null" ||
+      localStorage.getItem("authToken") == undefined
+    ) {
       // User is not logged in, redirect to auth page
       next("/auth");
-    }else{
+    } else {
       // User is authenticated, proceed
       next();
     }
