@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 import UserAuth from "@/components/UserAuth"; // A single page for login/signup
-import Chat from "@/components/Chat-ChatGPT";
+import Chat from "@/components/Chat";
 
 const routes = [
   {

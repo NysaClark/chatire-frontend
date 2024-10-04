@@ -2,7 +2,7 @@
   <div class="container">
     <div class="row">
       <div class="col-sm-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
-        <div v-if="sessionStarted" id="chat-container" class="card">
+        <div v-if="uri" id="chat-container" class="card">
           <div
             class="card-header text-white text-center font-weight-bold subtle-blue-gradient"
           >
@@ -89,20 +89,36 @@ import axios from "axios";
 export default {
   data() {
     return {
-      sessionStarted: false,
       username: "",
       messages: [],
       message: "",
     };
   },
 
-  created() {
-    this.username = localStorage.getItem("username");
+  computed: {
+    // Retrieve uri from route params
+    // & puts the uri in data
+    uri() {
+      return this.$route.params.uri;
+    },
+  },
 
-    if(sessionStorage.getItem("uri") !== null || this.$route.params.uri){
-      this.sessionStarted = true;
-      this.joinChatSession()
+  mounted() {
+    // Join chat & fetch messages if uri is present
+    if (this.uri) {
+      this.joinChatSession();
     }
+  },
+
+  created() {
+    // takes the username from loccalStorage
+    // temp code: can be removed so only 'Welcome!' is displayed
+    this.username = localStorage.getItem("username");
+  },
+
+  watch: {
+    // Whenever uri changes, try to join that chat session
+    uri: "joinChatSession",
   },
 
   methods: {
@@ -117,13 +133,11 @@ export default {
           alert(
             "A new session has been created. You'll be redirected automatically."
           );
-
-          // console.log(data.data.uri);
-          sessionStorage.setItem("uri", data.data.uri);
-
-          // Push the new URI to the route
-          // This code isn't working to put the uri in the route params :(
-          this.$router.push({ name: "Chat", params: { uri: data.data.uri } });
+          this.$router.push({
+            name: "Chat",
+            params: { uri: data.data.uri },
+            replace: true,
+          });
         })
         .catch((error) => {
           console.log(error);
@@ -132,17 +146,14 @@ export default {
     },
 
     async postMessage() {
-      // uri isn't being saved in the params/data so session storage is the backup :(
-      const uri = this.$route.params.uri || sessionStorage.getItem("uri");
-
-      if (!uri) {
+      if (!this.uri) { // can't post messages if not in a chat session
         return;
       }
 
       const body = { message: this.message };
 
       await axios
-        .post(`http://localhost:8000/api/chats/${uri}/messages/`, body, {
+        .post(`http://localhost:8000/api/chats/${this.uri}/messages/`, body, {
           headers: {
             Authorization: `Token ${localStorage.getItem("authToken")}`,
           },
@@ -158,17 +169,14 @@ export default {
     },
 
     async joinChatSession() {
-      // uri isn't being saved in the params/data so session storage is the backup :(
-      const uri = this.$route.params.uri || sessionStorage.getItem("uri");
-
-      if (!uri) {
+      if (!this.uri) { // can't join a chat if there's no chat uri to join with
         return;
       }
 
       const body = { username: this.username };
 
       await axios
-        .patch(`http://localhost:8000/api/chats/${uri}/`, body, {
+        .patch(`http://localhost:8000/api/chats/${this.uri}/`, body, {
           headers: {
             Authorization: `Token ${localStorage.getItem("authToken")}`,
           },
@@ -179,22 +187,19 @@ export default {
           );
 
           if (user) {
-            // The user belongs in & has joined the session
+            // The user has been added to the chat
+            // get past chat messages
             this.fetchChatSessionHistory();
           }
         });
     },
 
     async fetchChatSessionHistory() {
-      // uri isn't being saved in the params/data so session storage is the backup :(
-      const uri = this.$route.params.uri || sessionStorage.getItem("uri");
-
-      if (!uri) {
+      if (!this.uri) { // can't get chat messages if there's no chat uri to fetch with
         return;
       }
-
       await axios
-        .get(`http://127.0.0.1:8000/api/chats/${uri}/messages/`, {
+        .get(`http://localhost:8000/api/chats/${this.uri}/messages/`, {
           headers: {
             Authorization: `Token ${localStorage.getItem("authToken")}`,
           },
