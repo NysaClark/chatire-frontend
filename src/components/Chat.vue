@@ -2,7 +2,7 @@
   <div class="container">
     <div class="row">
       <div class="col-sm-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
-        <div v-if="uri" id="chat-container" class="card">
+        <div v-if="!loading && uri" id="chat-container" class="card">
           <div
             class="card-header text-white text-center font-weight-bold subtle-blue-gradient"
           >
@@ -62,8 +62,8 @@
           </div>
         </div>
 
-        <div v-else>
-          <h3 class="text-center">Welcome!</h3>
+        <div v-else-if="!loading && !uri">
+          <h3 class="text-center">Welcome {{ username }}!</h3>
           <br />
           <p class="text-center">
             To start chatting with friends click on the button below, it'll
@@ -78,6 +78,13 @@
             Start Chatting
           </button>
         </div>
+
+        <div v-else>
+          <div class="loading">
+            <img src="../assets/disqus.svg" />
+            <h4>Loading...</h4>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -89,6 +96,7 @@ import axios from "axios";
 export default {
   data() {
     return {
+      loading: true,
       username: "",
       messages: [],
       message: "",
@@ -104,16 +112,23 @@ export default {
   },
 
   mounted() {
-    // Join chat & fetch messages if uri is present
-    if (this.uri) {
-      this.joinChatSession();
-    }
-  },
-
-  created() {
     // takes the username from loccalStorage
     // temp code: can be removed so only 'Welcome!' is displayed
     this.username = localStorage.getItem("username");
+    // Join chat & fetch messages if uri is present
+
+    if (this.uri) {
+      this.joinChatSession();
+    }
+
+    this.connectToWebSocket()
+
+    setTimeout(() => {
+      this.loading = false;
+    }, 2000);
+
+    // Refresh the JWT every 240 Seconds (4 minutes)
+    setInterval(this.refreshToken, 240000);
   },
 
   watch: {
@@ -121,12 +136,22 @@ export default {
     uri: "joinChatSession",
   },
 
+  updated() {
+    // Scroll to bottom of Chat window
+
+    const chatBody = this.$refs.chatBody;
+
+    if (chatBody) {
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+  },
+
   methods: {
     async startChatSession() {
       await axios
         .post("http://localhost:8000/api/chats/", null, {
           headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
+            Authorization: `JWT ${localStorage.getItem("authToken")}`,
           },
         })
         .then((data) => {
@@ -146,7 +171,8 @@ export default {
     },
 
     async postMessage() {
-      if (!this.uri) { // can't post messages if not in a chat session
+      if (!this.uri) {
+        // can't post messages if not in a chat session
         return;
       }
 
@@ -155,11 +181,11 @@ export default {
       await axios
         .post(`http://localhost:8000/api/chats/${this.uri}/messages/`, body, {
           headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
+            Authorization: `JWT ${localStorage.getItem("authToken")}`,
           },
         })
-        .then((data) => {
-          this.messages.push(data.data);
+        .then(() => {
+          // this.messages.push(data.data);
           this.message = "";
         })
         .catch((error) => {
@@ -169,7 +195,8 @@ export default {
     },
 
     async joinChatSession() {
-      if (!this.uri) { // can't join a chat if there's no chat uri to join with
+      if (!this.uri) {
+        // can't join a chat if there's no chat uri to join with
         return;
       }
 
@@ -178,7 +205,7 @@ export default {
       await axios
         .patch(`http://localhost:8000/api/chats/${this.uri}/`, body, {
           headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
+            Authorization: `JWT ${localStorage.getItem("authToken")}`,
           },
         })
         .then((data) => {
@@ -195,17 +222,59 @@ export default {
     },
 
     async fetchChatSessionHistory() {
-      if (!this.uri) { // can't get chat messages if there's no chat uri to fetch with
+      if (!this.uri) {
+        // can't get chat messages if there's no chat uri to fetch with
         return;
       }
       await axios
         .get(`http://localhost:8000/api/chats/${this.uri}/messages/`, {
           headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
+            Authorization: `JWT ${localStorage.getItem("authToken")}`,
           },
         })
         .then((data) => {
           this.messages = data.data.messages;
+          setTimeout(() => {
+            this.loading = false;
+          }, 2000);
+        });
+    },
+
+    connectToWebSocket() {
+      const websocket = new WebSocket(`ws://localhost:8081/${this.uri}`);
+      websocket.onopen = this.onOpen;
+      websocket.onclose = this.onClose;
+      websocket.onmessage = this.onMessage;
+      websocket.onerror = this.onError;
+    },
+    onOpen(event) {
+      console.log("Connection opened.", event.data);
+    },
+    onClose(event) {
+      console.log("Connection closed.", event.data);
+
+      // Try and Reconnect after 5 seconds
+      setTimeout(this.connectToWebSocket, 5000);
+    },
+    onMessage(event) {
+      const message = JSON.parse(event.data);
+      this.messages.push(message);
+    },
+    onError(event) {
+      alert("An error occured:", event.data);
+    },
+
+    async refreshToken() {
+      const data = { token: localStorage.getItem("authToken") };
+
+      await axios
+        .post(`http://127.0.0.1:8000/this/is/hard/to/find/`, data)
+        .then((response) => {
+          localStorage.setItem("authToken", response.access);
+        })
+        .catch((error) => {
+          console.log(error);
+          alert(error);
         });
     },
   },
@@ -332,5 +401,11 @@ li {
 .send-section {
   margin-bottom: -20px;
   padding-bottom: 10px;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 </style>

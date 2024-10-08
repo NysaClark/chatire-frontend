@@ -172,11 +172,11 @@ export default {
 
       try {
         const { data } = await axios.post(
-          "http://localhost:8000/auth/token/login/",
+          "http://localhost:8000/auth/jwt/create/",
           credentials
         );
 
-        localStorage.setItem("authToken", data.auth_token);
+        localStorage.setItem("authToken", data.access);
         localStorage.setItem("username", this.username);
 
         // this.$router.push("/chats");
